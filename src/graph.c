@@ -3,14 +3,25 @@
 #include <dos.h>
 #include <conio.h>
 
+#ifdef DJGPP
+#include <stdio.h>
+#include <sys/nearptr.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
 #define COLOR(p) (p | p << 2 | p << 4 | p << 6)
 
 
-static const u32 CGA_EVEN = 0xB8000000L;
-static const u32 CGA_ODD = 0xB8002000L;
+#ifdef DJGPP
+static const u32 CGA_EVEN = (0xB800 * 16) + 0x0000;
+static const u32 CGA_ODD = (0xB800 * 16) + 0x2000;
+#else
+static const u32 CGA_EVEN = 0xB8000000;
+static const u32 CGA_ODD = 0xB8002000;
+#endif
+
 // For rendering
 static u32 ADDR[2];
 
@@ -28,7 +39,7 @@ static void set_video_mode(u16 mode) {
 
 
 static bool clip_rect_region(
-    i16* sx, i16* sy, i16* sw, i16* sh, 
+    i16* sx, i16* sy, i16* sw, i16* sh,
     i16* dx, i16* dy) {
 
     i16 ow, oh;
@@ -41,11 +52,11 @@ static bool clip_rect_region(
         *sx += ow-*sw;
         *dx = clipArea[0];
     }
-    
+
     // Right
     if(*dx+*sw >= clipArea[0] + clipArea[2]) {
 
-         *sw -= (*dx+*sw) - (clipArea[0] + clipArea[2]); 
+         *sw -= (*dx+*sw) - (clipArea[0] + clipArea[2]);
     }
 
     // Top
@@ -56,7 +67,7 @@ static bool clip_rect_region(
         *sy += oh-*sh;
         *dy = clipArea[1];
     }
-    
+
     // Bottom
     if(*dy+*sh >= clipArea[1] + clipArea[3]) {
 
@@ -70,7 +81,7 @@ static bool clip_rect_region(
 
 static void draw_text_base(
     void (*draw_func) (Bitmap*, i16, i16, i16, i16, i16, i16),
-    Bitmap* font, const str text, 
+    Bitmap* font, const str text,
     i16 x, i16 y, i16 endIndex, bool center) {
 
     i16 dx, dy;
@@ -101,11 +112,11 @@ static void draw_text_base(
         sx = ((i16)c) % 16;
         sy = ((i16)c) / 16;
 
-        draw_func(font, 
-            sx*(d / 4), sy*d, 
+        draw_func(font,
+            sx*(d / 4), sy*d,
             d / 4, d,
             dx, dy);
-        
+
 
         dx += d / 4;
     }
@@ -113,13 +124,24 @@ static void draw_text_base(
 
 
 void init_graphics() {
+#ifdef DJGPP
+    if (__djgpp_nearptr_enable() == 0) {
+        printf("Cannot directly access video memory.\n");
+        exit(-1);
+    }
+#endif
 
     const u16 CGA_MODE = 4;
 
     set_video_mode(CGA_MODE);
 
+#ifdef DJGPP
+    ADDR[0] = CGA_EVEN + __djgpp_conventional_base;
+    ADDR[1] = CGA_ODD + __djgpp_conventional_base;
+#else
     ADDR[0] = CGA_EVEN;
     ADDR[1] = CGA_ODD;
+#endif
 
     clippingEnabled = false;
     clipArea[0] = 0;
@@ -134,7 +156,7 @@ void reset_graphics() {
     const u16 POSSIBLE_DEFAULT_MODE = 2;
 
     // Is this even the default video mode?
-    set_video_mode(POSSIBLE_DEFAULT_MODE);  
+    set_video_mode(POSSIBLE_DEFAULT_MODE);
 }
 
 
@@ -142,8 +164,8 @@ void clear_screen(u8 color) {
 
     u8 p = COLOR(color);
 
-    memset((void*)CGA_EVEN, p, 8000);
-    memset((void*)CGA_ODD, p, 8000);
+    memset((void*)ADDR[0], p, 8000);
+    memset((void*)ADDR[1], p, 8000);
 }
 
 
@@ -176,7 +198,7 @@ void vertical_line(i16 x, i16 y, u8 shift, i16 h, u8 color) {
     for (dy = y; dy < y + h; ++ dy) {
 
         out = (u8*)ADDR[dy & 1];
-        out[djump] = (color & mask) | 
+        out[djump] = (color & mask) |
                 (out[djump] & ~mask);
 
         djump += 80 * (dy & 1);
@@ -190,8 +212,8 @@ void draw_bitmap_fast(Bitmap* bmp, i16 x, i16 y) {
 }
 
 
-void draw_bitmap_region_fast(Bitmap* bmp, 
-    i16 sx, i16 sy, i16 sw, i16 sh, 
+void draw_bitmap_region_fast(Bitmap* bmp,
+    i16 sx, i16 sy, i16 sw, i16 sh,
     i16 dx, i16 dy) {
 
     i16 i;
@@ -207,21 +229,21 @@ void draw_bitmap_region_fast(Bitmap* bmp,
 
     for (i = dy; i < dy + sh; ++ i) {
 
-        memcpy((void*)(ADDR[i & 1] + djump), 
+        memcpy((void*)(ADDR[i & 1] + djump),
                (void*)((u32)bmp->pixels + sjump), sw);
 
         djump += 80 * (i & 1);
         sjump += w;
-    }     
+    }
 }
 
 
 // For faster performance ordinary fast_region does not
 // call this method with "big enough" skip value
-void draw_bitmap_region_fast_skip_lines(Bitmap* bmp, 
-    i16 sx, i16 sy, i16 sw, i16 sh, 
+void draw_bitmap_region_fast_skip_lines(Bitmap* bmp,
+    i16 sx, i16 sy, i16 sw, i16 sh,
     i16 dx, i16 dy, i16 skip) {
-    
+
     i16 i;
     u32 djump;
     u32 sjump;
@@ -231,7 +253,7 @@ void draw_bitmap_region_fast_skip_lines(Bitmap* bmp,
     sjump = (u32)(sy*w + sx);
 
     if (skip == 0 || (
-        clippingEnabled && 
+        clippingEnabled &&
         !clip_rect_region(&sx, &sy, &sw, &sh, &dx, &dy)))
         return;
 
@@ -242,17 +264,17 @@ void draw_bitmap_region_fast_skip_lines(Bitmap* bmp,
         if ((skip > 0 && i % skip != 0) ||
             (skip < 0 && i % (-skip) == 1)) {
 
-            memcpy((void*)(ADDR[i & 1] + djump), 
+            memcpy((void*)(ADDR[i & 1] + djump),
                 (void*)((u32)bmp->pixels + sjump), sw);
         }
 
         djump += 80 * (i & 1);
         sjump += w;
-    }     
+    }
 }
 
 
-void draw_text_fast(Bitmap* font, const str text, 
+void draw_text_fast(Bitmap* font, const str text,
     i16 x, i16 y, i16 endIndex, bool center) {
 
     draw_text_base(draw_bitmap_region_fast,
@@ -260,8 +282,8 @@ void draw_text_fast(Bitmap* font, const str text,
 }
 
 
-void draw_bitmap_region(Bitmap* bmp, 
-    i16 sx, i16 sy, i16 sw, i16 sh, 
+void draw_bitmap_region(Bitmap* bmp,
+    i16 sx, i16 sy, i16 sw, i16 sh,
     i16 dx, i16 dy) {
 
     i16 x, y;
@@ -284,13 +306,13 @@ void draw_bitmap_region(Bitmap* bmp,
     djump = (u32)((dy/2)*80 + dx);
     sjump = (u32)(sy*w + sx);
 
-    for (y = dy; y < dy + sh; ++ y) {   
+    for (y = dy; y < dy + sh; ++ y) {
 
         out = (u8*)ADDR[y & 1];
         for (x = 0; x < sw; ++ x) {
 
             mask = bmp->mask[sjump];
-            out[djump] = ((bmp->pixels[sjump]) & mask) | 
+            out[djump] = ((bmp->pixels[sjump]) & mask) |
                             (out[djump] & ~mask);
 
             ++ sjump;
@@ -298,7 +320,7 @@ void draw_bitmap_region(Bitmap* bmp,
         }
         djump += 80 * (y & 1) - sw;
         sjump += w - sw;
-    }   
+    }
 }
 
 
@@ -311,7 +333,7 @@ void draw_text(Bitmap* font, const str text, i16 x, i16 y, i16 endIndex, bool ce
 
 void draw_sprite(Sprite* spr, Bitmap* bmp, i16 x, i16 y) {
 
-    draw_bitmap_region(bmp, 
+    draw_bitmap_region(bmp,
         spr->frame * spr->width, spr->row * spr->height,
         spr->width, spr->height, x, y);
 }

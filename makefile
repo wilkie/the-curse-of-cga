@@ -1,3 +1,9 @@
+CC=i586-pc-msdosdjgpp-gcc
+CFLAGS=
+
+.PHONY: game
+game: src/*.c src/*.h
+	$(CC) $(CFLAGS) src/*.c -o CURSECGA.exe
 
 .PHONY: png2cga
 png2cga:

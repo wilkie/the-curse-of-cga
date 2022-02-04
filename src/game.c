@@ -20,11 +20,11 @@
 #include <math.h>
 
 
-static const str STORY = 
+static const str STORY =
 "Your graphics card is\nbroken and you only\nhave your old CGA\ncard left. You have to\nfind eight magic gems\nin your basement and\n"
 "perform a demonic\nritual to get your\ndead card back!";
 
-static const str ENDING = 
+static const str ENDING =
 "Congratulations!\nWith the power of\ngems, you perform a\ndemonic ritual and\nexchange your soul\nfor a working\ngraphics card.\nHooray!";
 
 
@@ -75,7 +75,7 @@ static i16 oldTrHeight;
 static bool quit = false;
 
 
-static void draw_frame(Bitmap* bmp, i16 x, i16 y, i16 w, i16 h, 
+static void draw_frame(Bitmap* bmp, i16 x, i16 y, i16 w, i16 h,
     i16 xshift, i16 wextra, bool drawShadow) {
 
     i16 i;
@@ -100,7 +100,7 @@ static void draw_frame(Bitmap* bmp, i16 x, i16 y, i16 w, i16 h,
     for (i = 0; i < end + ((i16)drawShadow); ++ i) {
 
         if (i < end) {
-            
+
             draw_bitmap_region_fast(bmp, xshift, 8, 2, 8, x - 2, y + i*8);
             draw_bitmap_region_fast(bmp, xshift + 4, 8, 2, 8, x + w, y + i*8);
         }
@@ -110,10 +110,10 @@ static void draw_frame(Bitmap* bmp, i16 x, i16 y, i16 w, i16 h,
     }
 
     // Corners
-    draw_bitmap_region_fast(bmp, xshift + 0, 0, 2, 8, x - 2, y - 8);   
-    draw_bitmap_region_fast(bmp, xshift + 4, 0, 2, 8, x + w, y - 8);   
-    draw_bitmap_region_fast(bmp, xshift + 0, 16, 2, 8, x - 2, y + h);   
-    draw_bitmap_region_fast(bmp, xshift + 4, 16, 2, 8, x + w, y + h);  
+    draw_bitmap_region_fast(bmp, xshift + 0, 0, 2, 8, x - 2, y - 8);
+    draw_bitmap_region_fast(bmp, xshift + 4, 0, 2, 8, x + w, y - 8);
+    draw_bitmap_region_fast(bmp, xshift + 0, 16, 2, 8, x - 2, y + h);
+    draw_bitmap_region_fast(bmp, xshift + 4, 16, 2, 8, x + w, y + h);
 }
 
 
@@ -129,7 +129,7 @@ static void mark_room_visited() {
 static void pause_menu_callback(i16 cursorPos) {
 
     switch (cursorPos) {
-        
+
     case 0:
         stage_redraw_all(gameStage);
         break;
@@ -151,7 +151,7 @@ static void pause_menu_callback(i16 cursorPos) {
 
         quit = true;
         break;
-    
+
     default:
         break;
     }
@@ -229,7 +229,7 @@ bool init_game_scene() {
 
     transitionTimer = 0;
     transitionMode = 2;
-    
+
     quit = false;
 
     return false;
@@ -238,14 +238,15 @@ bool init_game_scene() {
 
 static bool quit_event() {
 
+  /*
     if (init_title_screen_scene()) {
 
         return true;
     }
 
-    core_register_callbacks(title_screen_refresh, 
+    core_register_callbacks(title_screen_refresh,
         title_screen_redraw);
-
+*/
     return false;
 }
 
@@ -265,13 +266,13 @@ static bool go_to_ending() {
 }
 
 
-bool game_refresh(i16 step) {   
+bool game_refresh(i16 step) {
 
     // Hard-coding woohoo
     const u8 REQUIRED_PLACED_GEMS = 8;
 
     if (quit) {
-        
+
         return quit_event();
     }
 
@@ -281,7 +282,7 @@ bool game_refresh(i16 step) {
 
             if ((-- transitionMode) > 0) {
 
-                if (transitionMode == 2) 
+                if (transitionMode == 2)
                     player->startPos = stage_find_player(gameStage);
 
                 // TODO: Callback function?
@@ -296,7 +297,7 @@ bool game_refresh(i16 step) {
                     transitionMode = 1;
                 }
 
-                transitionTimer += TRANSITION_TIME;       
+                transitionTimer += TRANSITION_TIME;
             }
         }
         return false;
@@ -392,7 +393,7 @@ static void draw_map(i16 x, i16 y) {
 
             draw_bitmap_region_fast(bmpHUD,
                 12, sy, ROOM_WIDTH, ROOM_HEIGHT,
-                x + dx * ROOM_WIDTH, 
+                x + dx * ROOM_WIDTH,
                 y + dy * ROOM_HEIGHT);
         }
     }
@@ -446,17 +447,17 @@ static void draw_hud_static() {
     clear_screen(1);
 
     // Needed for the initial black bar effect
-    fill_rect(gameStage->xoff, 
+    fill_rect(gameStage->xoff,
         gameStage->yoff,
-        gameStage->roomWidth * 4, 
+        gameStage->roomWidth * 4,
         gameStage->roomHeight*16, 0);
 
     draw_frame(bmpHUD, gameStage->xoff, gameStage->yoff,
         gameStage->roomWidth*4,
-        gameStage->roomHeight*16, 
+        gameStage->roomHeight*16,
         0, 0, true);
 
-        
+
     // Logo
     draw_bitmap_fast(bmpLogo, 80 - 21, 8);
 
@@ -496,9 +497,9 @@ static void set_clipping_area() {
 
     toggle_clipping(true);
     set_clip_rectangle(
-        gameStage->xoff, 
+        gameStage->xoff,
         gameStage->yoff,
-        gameStage->roomWidth * 4, 
+        gameStage->roomWidth * 4,
         gameStage->roomHeight*16);
 }
 
@@ -520,7 +521,7 @@ static void draw_transition() {
         trHeight = ((h/2 + 16) << 4) / TRANSITION_TIME * (TRANSITION_TIME - transitionTimer);
         trHeight >>= 8;
         trHeight <<= 4;
-        
+
         fill_rect(x, y, w, trHeight, 0);
         fill_rect(x, y + h - trHeight, w, trHeight, 0);
     }
@@ -540,7 +541,7 @@ static void draw_transition() {
             stage_draw(gameStage, bmpTileset);
             stage_draw_objects(gameStage, bmpObjects);
         }
-        
+
         if ((i16)abs(player->pos.y - gameStage->roomHeight/2) < 5 - stageRow) {
 
             set_clipping_area();
@@ -560,14 +561,14 @@ void game_redraw() {
 
         msg_draw(msgBox, bmpFont,
             gameStage->xoff, gameStage->yoff,
-            gameStage->roomWidth*4, 
+            gameStage->roomWidth*4,
             gameStage->roomHeight*16);
         return;
     }
 
     if (transitionMode == 0 && pauseMenu->active) {
 
-        menu_draw(pauseMenu, bmpFont, 
+        menu_draw(pauseMenu, bmpFont,
             gameStage->xoff + gameStage->roomWidth*2,
             gameStage->yoff + gameStage->roomHeight*8);
         return;
@@ -608,7 +609,7 @@ void dispose_game_scene() {
     dispose_bitmap(bmpLogo);
 
     dispose_tilemap(baseMap);
-    
+
     dispose_stage(gameStage);
 
     if (player != NULL)

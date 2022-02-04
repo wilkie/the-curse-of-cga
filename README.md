@@ -20,7 +20,19 @@ Arrow keys for moving, R for restarting, Enter for pausing (you can also find a 
 
 ## Building
 
-You see a makefile there? You cannot use it to build the game. Reason: OpenWatcom's command-line tools are weird and documentation even weirder, so instead I ran the IDE through Wine, put all source files there and then built the project. You can do the same.
+You can build `CURSECGA.exe` by placing the `i585-pc-msdosdjgpp-gcc` binary in the `PATH` and invoking `make`:
+
+```
+make
+```
+
+If you are using a different compiler, or want to give an absolute path to the compiler, you can specify that by using `CC`:
+
+```
+make CC=i686-pc-msdosdjgpp-gcc
+```
+
+This will create `CURSECGA.exe` in the root path of the project which you can copy along with `ASSETS` to a DOS emulator or real machine!
 
 -----
 
